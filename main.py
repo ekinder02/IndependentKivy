@@ -11,6 +11,7 @@ from kivy.animation import Animation
 from kivy.uix.label import Label
 import time
 from functools import partial
+from kivy.uix.progressbar import ProgressBar
 
 class PVZApp(App): 
     def build(self):
@@ -18,7 +19,9 @@ class PVZApp(App):
         Clock.schedule_interval(game.update, 1.0 / 60.0)
         return game
 
-rounds = [10,20]
+rounds = [[8,2,0],[12,6,2]]
+roundsF = [10,20]
+roundsT = [10,20]
 selection = ""
 isSliding = False
 troops = []
@@ -26,11 +29,14 @@ balls = []
 calls = 0
 energy = 100
 enemies = []
+enemyHealth = []
 i = 0
+roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (0, 0))
 class TopBar(Widget):
     def __init__(self, **args):
         super(TopBar, self).__init__(**args)
         self.selectionBar()
+        self.bar()
     
     def selectionBar(self):
         layout = GridLayout(cols = 4, rows = 1,size = (400, 100))
@@ -160,6 +166,19 @@ class TopBar(Widget):
         stretch.start(round)
         Clock.schedule_once(partial(self.removeWidget, round), 4)
     
+    def bar(self):
+        global i
+        global roundProgress
+        roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (0, 0))
+        self.add_widget(roundProgress)
+    def addBar(self):
+        global i
+        global roundProgress
+        roundProgress.value += 100/roundsF[i]
+        print(100/roundsF[i])
+    def updateBar(self):
+        roundProgress.value = 0
+    
     def removeWidget(self,widget,*largs):
         self.remove_widget(widget)
     
@@ -172,17 +191,24 @@ class TopBar(Widget):
     def moveEnemy(self):
         global enemies
         for enemy in enemies:
-            enemy.pos = (enemy.pos[0] - 0.5, enemy.pos[1])
+            if enemy.source == "klay.png":
+                enemy.pos = (enemy.pos[0] - 0.8, enemy.pos[1])
+            if enemy.source == "curry.png" or "draymond.png":
+                enemy.pos = (enemy.pos[0] - 0.5, enemy.pos[1])
             
     def didCollide(self, ball):
         global enemies
         global balls
         for enemy in enemies:
             if abs(ball.pos[0] - enemy.pos[0]) <= 25 and ball.pos[1] == enemy.pos[1]:
+                enemyHealth[enemies.index(enemy)] -= 1
                 self.remove_widget(ball)
-                self.remove_widget(enemy)
-                enemies.remove(enemy)
                 balls.remove(ball)
+                if enemyHealth[enemies.index(enemy)] == 0:
+                    enemyHealth.remove(enemyHealth[enemies.index(enemy)])
+                    self.remove_widget(enemy)
+                    enemies.remove(enemy)
+                    self.addBar()
                 return
             if ball.pos[0] > 1200:
                 self.remove_widget(ball)
@@ -193,20 +219,30 @@ class TopBar(Widget):
         sourceImg = enemy + ".png"
         enemyImage = Image(source = sourceImg ,size = (100, 100), pos = (1200,random.randint(1,6)*100))
         global enemies
+        global enemyHealth
         enemies.append(enemyImage)
+        if enemy == "curry":
+            enemyHealth.append(3)
+        elif enemy == "draymond":
+            enemyHealth.append(5)
+        elif enemy == "klay":
+            enemyHealth.append(2)
         self.add_widget(enemyImage)
     
     def spawnRounds(self):
         sec = 150
         global calls
         global rounds
+        global roundsT
         global i
-        if calls % sec == 0 and calls != 0 and rounds[i] != 0:
-            self.makeEnemy("curry")
-            rounds[i] -= 1
-        if rounds[i] == 0:
-            i += 1
-            self.roundStart()
+        enemyList = ["curry","draymond","klay"]
+        if calls % sec == 0 and calls != 0 and rounds[i] != 0 and roundsT[i] != 0:
+            choice = random.choice(enemyList)
+            while rounds[i][enemyList.index(choice)] == 0:
+                choice = random.choice(enemyList)
+            self.makeEnemy(choice)
+            rounds[i][enemyList.index(choice)] -= 1
+            roundsT[i] -= 1
         
         
     def update(self,ndt):
@@ -214,13 +250,21 @@ class TopBar(Widget):
         self.moveBall()
         self.moveEnemy()
         self.spawnRounds()
+        global roundProgress
         global calls
+        global i
+        print(i)
         calls += 1
         if calls % 500 == 0:
             global energy
             energy += 25
         if calls == 10:
             self.roundStart()
+        if roundProgress.value == roundProgress.max:
+            self.updateBar()
+            i += 1
+            self.roundStart()
+            print("AFHSBIFBASJOFAJOSFNOJAF")
         print (energy)
     
 def myround(x, base=100):
