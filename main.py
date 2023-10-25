@@ -13,10 +13,14 @@ import time
 from functools import partial
 from kivy.uix.progressbar import ProgressBar
 
+Config.set('graphics', 'width', '1200')
+Config.set('graphics', 'height', '800')
+Config.write()
+
 class PVZApp(App): 
     def build(self):
         game = TopBar()
-        Clock.schedule_interval(game.update, 1.0 / 60.0)
+        Clock.schedule_interval(game.update, 1.0/56.5)
         return game
 
 rounds = [[8,2,0],[12,6,2]]
@@ -25,11 +29,18 @@ roundsT = [10,20]
 selection = ""
 isSliding = False
 troops = []
+troopHealth = []
+troopCalls = []
 balls = []
 calls = 0
+sec = 180
 energy = 100
 enemies = []
 enemyHealth = []
+enemyCalls = []
+mowers = []
+mowersUsed = []
+callsSpawn = 0
 i = 0
 roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (0, 0))
 class TopBar(Widget):
@@ -37,44 +48,62 @@ class TopBar(Widget):
         super(TopBar, self).__init__(**args)
         self.selectionBar()
         self.bar()
+        self.energyDisplay()
     
     def selectionBar(self):
-        layout = GridLayout(cols = 4, rows = 1,size = (400, 100))
+        layout = GridLayout(cols = 5, rows = 1,size = (500, 100))
 
-        btn = Button(text ="",
+        btn = Button(text ="JR Smith\nCost: 75",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (0,0),
                     )
         btn.bind(on_press = lambda x: self.troopSelection("JR"))
         
-        btn2 = Button(text ="",
+        btn2 = Button(text ="Lebron James\nCost: 200",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (100,0),
                     ) 
         btn2.bind(on_press = lambda x: self.troopSelection("bron"))
         
-        btn3 = Button(text ="",
+        btn3 = Button(text ="Kevin Durant\nCost: 100",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (200,0),
                     )
         btn3.bind(on_press = lambda x: self.troopSelection("KD"))
         
-        btn4 = Button(text ="",
+        btn4 = Button(text ="Kyrie Irving\nCost: 75",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (300,0),
                     ) 
-        btn4.bind(on_press = lambda x: self.troopSelection("del"))
+        btn4.bind(on_press = lambda x: self.troopSelection("kyrie"))
+        
+        btn5 = Button(text ="Delete Troop",
+                        color =(1, 0, .65, 1),
+                        size = (100, 100),
+                        pos = (300,0),
+                    ) 
+        btn5.bind(on_press = lambda x: self.troopSelection("del"))
 
         layout.add_widget(btn)
         layout.add_widget(btn2)
         layout.add_widget(btn3)
         layout.add_widget(btn4)
+        layout.add_widget(btn5)
         self.add_widget(layout)
-        
+    
+    def energyDisplay(self):
+        global energy
+        global energyDisplay
+        energyDisplay = Label(text = "Energy: " + str(energy), pos = (0, 700),color= "ff3333",size = (100, 100))
+        self.add_widget(energyDisplay)
+    
+    def energyUpdate(self):
+        energyDisplay.text = "Energy: " + str(energy)
+    
     def court(self):
         courtImage = Image(source = "court.jpg",size = (1000, 800), pos = (0, 0))
         self.add_widget(courtImage)
@@ -82,42 +111,59 @@ class TopBar(Widget):
     def troopSelection(self, troop):
         global selection
         selection = troop
-        print(selection)
     
     def on_touch_move(self, touch):
-        print(selection)
-        print('The touch is at position', myround(touch.pos))
         global isSliding
         isSliding = True
+        print(myround(touch.pos))
     
     def makeTroop(self,troop,posCords):
         global energy
         go = False
-        if troop == "bron" and energy >= 125:
-            energy -= 125
+        health = 0
+        if troop == "bron" and energy >= 200:
+            energy -= 200
             go = True
-        elif troop == "KD" and energy >= 50:
-            energy -= 50
+            health = 10
+        elif troop == "KD" and energy >= 100:
+            energy -= 100
             go = True
+            health = 10
         elif troop == "JR" and energy >= 75:
             energy -= 75
             go = True
+            health = 5
+        elif troop == "kyrie" and energy >= 75:
+            energy -= 75
+            go = True
+            health = 25
         if go == True:
             sourceImg = troop + ".png"
             troopImage = Image(source = sourceImg ,size = (100, 100), pos = posCords)
             global troops
+            global troopHealth
+            global troopCalls
             troops.append(troopImage)
+            troopHealth.append(health)
+            troopCalls.append(1)
             self.add_widget(troopImage)
     
     def on_touch_up(self, touch):
         global isSliding
         global selection
-        if isSliding == True and selection == "del":
+        global troops
+        if isSliding == True and selection == "del" and myround(touch.pos)[1] >= 100 and myround(touch.pos)[1] <= 500 and myround(touch.pos)[0] >= 0 and myround(touch.pos)[0] <= 800:
             self.deleteTroop(myround(touch.pos))
-        elif isSliding == True and selection != "":
+            isSliding = False
+            return
+        for troop in troops:
+            if troop.pos[0] == myround(touch.pos)[0] and troop.pos[1] == myround(touch.pos)[1]:
+                isSliding = False
+                return
+        if isSliding == True and selection != "" and myround(touch.pos)[1] >= 100 and myround(touch.pos)[1] <= 500 and myround(touch.pos)[0] >= 0 and myround(touch.pos)[0] <= 800:
             self.makeTroop(selection,myround(touch.pos))
             selection = ""
-        isSliding = False
+            isSliding = False
     
     def spawnBullet(self, troop):
         troopImage = Image(source = "ball.png" ,size = (100, 100), pos = troop.pos)
@@ -126,8 +172,12 @@ class TopBar(Widget):
     def deleteTroop(self, pos):
         global troops
         global energy
+        global troopHealth
+        global troopCalls
         for troop in troops:
             if troop.pos[0] == pos[0] and troop.pos[1] == pos[1]:
+                troopHealth.remove(troopHealth[troops.index(troop)])
+                troopCalls.remove(troopCalls[troops.index(troop)])
                 self.remove_widget(troop)
                 troops.remove(troop)
                 energy += 25
@@ -138,24 +188,27 @@ class TopBar(Widget):
         global troops
         global energy
         for troop in troops:
-            if troop.source == "bron.png" and calls % 200 == 0:
+            if troop.source == "bron.png" and troopCalls[troops.index(troop)] % 60 == 0:
                 shoot = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
                 shoot += Animation(size = (100, 100), d = 0.1)
                 shoot.start(troop)
+                troopCalls[troops.index(troop)] = 0
                 ball = self.spawnBullet(troop)
                 self.add_widget(ball)
                 balls.append(ball)
-            if troop.source == "KD.png" and calls % 350 == 0:
+            if troop.source == "KD.png" and troopCalls[troops.index(troop)] % 90 == 0:
                 shoot = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
                 shoot += Animation(size = (100, 100), d = 0.1)
                 shoot.start(troop)
+                troopCalls[troops.index(troop)] = 0
                 ball = self.spawnBullet(troop)
                 self.add_widget(ball)
                 balls.append(ball)
-            if troop.source == "JR.png" and calls % 500 == 0:
+            if troop.source == "JR.png" and troopCalls[troops.index(troop)] % 900 == 0:
                 stretch = Animation(size = (100, 125), d = 0.5, t = 'out_elastic')
                 stretch += Animation(size = (100, 100), d = 0.5)
                 stretch.start(troop)
+                troopCalls[troops.index(troop)] = 0
                 energy += 50
     
     def roundStart(self):
@@ -169,13 +222,14 @@ class TopBar(Widget):
     def bar(self):
         global i
         global roundProgress
-        roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (0, 0))
+        roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (500, 700))
         self.add_widget(roundProgress)
+    
     def addBar(self):
         global i
         global roundProgress
         roundProgress.value += 100/roundsF[i]
-        print(100/roundsF[i])
+    
     def updateBar(self):
         roundProgress.value = 0
     
@@ -186,57 +240,123 @@ class TopBar(Widget):
         global balls
         for ball in balls:
             ball.pos = (ball.pos[0] + 10, ball.pos[1])
-            self.didCollide(ball)
+            self.didCollide(ball,False)
+    
+    def endOfMap(self):
+        global enemies
+        global mowers
+        global mowersUsed
+        for enemy in enemies:
+            if enemy.pos[0] == 0:
+                lat = enemy
+                if mowersUsed == []:
+                    ball = self.spawnBullet(lat)
+                    self.add_widget(ball)
+                    mowers.append(ball)
+                    mowersUsed.append(ball.pos)
+                    return
+                for mower in mowersUsed:
+                    if mower[1] == lat.pos[1]:
+                        return(False)
+                ball = self.spawnBullet(lat)
+                self.add_widget(ball)
+                mowers.append(ball)
+                mowersUsed.append(ball.pos)
+                return
+            
+    def moveMowers(self):
+        global mowers
+        for mower in mowers:
+            mower.pos = (mower.pos[0] + 20, mower.pos[1])
+            self.didCollide(mower,True)
             
     def moveEnemy(self):
         global enemies
+        global troops
+        global calls
+        global troopCalls
+        global enemyCalls
+        cantMove = False
         for enemy in enemies:
+            for troop in troops:
+                if enemy.pos[0] - troop.pos[0] <= 50 and enemy.pos[0] - troop.pos[0] > 0 and enemy.pos[1] == troop.pos[1]:
+                    cantMove = True
+                    if enemyCalls[enemies.index(enemy)] % 60 == 0:
+                        attack = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
+                        attack += Animation(size = (100, 100), d = 0.1)
+                        attack.start(enemy)
+                        enemyCalls[enemies.index(enemy)] = 0
+                        troopHealth[troops.index(troop)] -= 1
+                        if troopHealth[troops.index(troop)] == 0:
+                            troopHealth.remove(troopHealth[troops.index(troop)])
+                            troopCalls.remove(troopCalls[troops.index(troop)])
+                            self.remove_widget(troop)
+                            troops.remove(troop)
+                    continue
+            if cantMove == True:
+                cantMove = False
+                continue
             if enemy.source == "klay.png":
-                enemy.pos = (enemy.pos[0] - 0.8, enemy.pos[1])
-            if enemy.source == "curry.png" or "draymond.png":
                 enemy.pos = (enemy.pos[0] - 0.5, enemy.pos[1])
+            if enemy.source == "curry.png" or "draymond.png":
+                enemy.pos = (enemy.pos[0] - 0.3, enemy.pos[1])
             
-    def didCollide(self, ball):
+    def didCollide(self, ball,end):
         global enemies
         global balls
+        global mowers
+        global enemyCalls
         for enemy in enemies:
             if abs(ball.pos[0] - enemy.pos[0]) <= 25 and ball.pos[1] == enemy.pos[1]:
-                enemyHealth[enemies.index(enemy)] -= 1
-                self.remove_widget(ball)
-                balls.remove(ball)
+                if end == False:
+                    enemyHealth[enemies.index(enemy)] -= 1
+                    self.remove_widget(ball)
+                    balls.remove(ball)
+                elif end == True:
+                    enemyHealth[enemies.index(enemy)] = 0
                 if enemyHealth[enemies.index(enemy)] == 0:
                     enemyHealth.remove(enemyHealth[enemies.index(enemy)])
+                    enemyCalls.remove(enemyCalls[enemies.index(enemy)])
                     self.remove_widget(enemy)
                     enemies.remove(enemy)
                     self.addBar()
                 return
             if ball.pos[0] > 1200:
                 self.remove_widget(ball)
-                balls.remove(ball)
+                if end == False:
+                    balls.remove(ball)
+                if end == True:
+                    mowers.remove(ball)
                 return
+            
                 
     def makeEnemy(self,enemy):
         sourceImg = enemy + ".png"
-        enemyImage = Image(source = sourceImg ,size = (100, 100), pos = (1200,random.randint(1,6)*100))
+        enemyImage = Image(source = sourceImg ,size = (100, 100), pos = (1200,random.randint(1,5)*100))
         global enemies
         global enemyHealth
+        global enemyCalls
         enemies.append(enemyImage)
+        enemyCalls.append(1)
         if enemy == "curry":
-            enemyHealth.append(3)
+            enemyHealth.append(10)
         elif enemy == "draymond":
-            enemyHealth.append(5)
+            enemyHealth.append(15)
         elif enemy == "klay":
-            enemyHealth.append(2)
+            enemyHealth.append(8)
         self.add_widget(enemyImage)
     
     def spawnRounds(self):
-        sec = 150
+        global sec
         global calls
         global rounds
         global roundsT
         global i
+        global callsSpawn
         enemyList = ["curry","draymond","klay"]
-        if calls % sec == 0 and calls != 0 and rounds[i] != 0 and roundsT[i] != 0:
+        if callsSpawn % sec == 0 and callsSpawn != 0 and rounds[i] != 0 and roundsT[i] != 0:
+            sec = random.randint(180,300)
+            callsSpawn = 0
             choice = random.choice(enemyList)
             while rounds[i][enemyList.index(choice)] == 0:
                 choice = random.choice(enemyList)
@@ -250,12 +370,26 @@ class TopBar(Widget):
         self.moveBall()
         self.moveEnemy()
         self.spawnRounds()
+        self.moveMowers()
+        if self.endOfMap() == False:
+            print("Game Over")
+        self.energyUpdate()
         global roundProgress
         global calls
         global i
-        print(i)
+        global callsSpawn
+        global troopCalls
+        global enemyCalls
+        global enemies
+        global troops
         calls += 1
-        if calls % 500 == 0:
+        callsSpawn += 1
+        for enemy in enemies:
+            enemyCalls[enemies.index(enemy)] += 1 
+        for troop in troops:
+            troopCalls[troops.index(troop)] += 1
+        
+        if calls % 240 == 0:
             global energy
             energy += 25
         if calls == 10:
@@ -264,8 +398,6 @@ class TopBar(Widget):
             self.updateBar()
             i += 1
             self.roundStart()
-            print("AFHSBIFBASJOFAJOSFNOJAF")
-        print (energy)
     
 def myround(x, base=100):
     return (base * math.floor(x[0]/base),base * math.floor(x[1]/base))
