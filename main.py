@@ -49,6 +49,7 @@ class TopBar(Widget):
         self.selectionBar()
         self.bar()
         self.energyDisplay()
+        self.court()
     
     def selectionBar(self):
         layout = GridLayout(cols = 5, rows = 1,size = (500, 100))
@@ -105,7 +106,7 @@ class TopBar(Widget):
         energyDisplay.text = "Energy: " + str(energy)
     
     def court(self):
-        courtImage = Image(source = "court.jpg",size = (1000, 800), pos = (0, 0))
+        courtImage = Image(source = "court.png",size = (1200, 500), pos = (0, 100))
         self.add_widget(courtImage)
         
     def troopSelection(self, troop):
@@ -222,7 +223,7 @@ class TopBar(Widget):
     def bar(self):
         global i
         global roundProgress
-        roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (500, 700))
+        roundProgress = ProgressBar(max = 100, value = 0, size = (400, 100), pos = (500, 700))
         self.add_widget(roundProgress)
     
     def addBar(self):
