@@ -54,7 +54,7 @@ class TopBar(Widget):
     def selectionBar(self):
         layout = GridLayout(cols = 5, rows = 1,size = (500, 100))
 
-        btn = Button(text ="JR Smith\nCost: 75",
+        btn = Button(text ="JR Smith\nCost: 50",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (0,0),
@@ -99,7 +99,7 @@ class TopBar(Widget):
     def energyDisplay(self):
         global energy
         global energyDisplay
-        energyDisplay = Label(text = "Energy: " + str(energy), pos = (0, 700),color= "ff3333",size = (100, 100))
+        energyDisplay = Label(text = "Energy: " + str(energy), pos = (100, 700),color= "FFFFFF",font_size = "50sp")
         self.add_widget(energyDisplay)
     
     def energyUpdate(self):
@@ -116,7 +116,6 @@ class TopBar(Widget):
     def on_touch_move(self, touch):
         global isSliding
         isSliding = True
-        print(myround(touch.pos))
     
     def makeTroop(self,troop,posCords):
         global energy
@@ -130,8 +129,8 @@ class TopBar(Widget):
             energy -= 100
             go = True
             health = 10
-        elif troop == "JR" and energy >= 75:
-            energy -= 75
+        elif troop == "JR" and energy >= 50:
+            energy -= 50
             go = True
             health = 5
         elif troop == "kyrie" and energy >= 75:
@@ -184,12 +183,17 @@ class TopBar(Widget):
                 energy += 25
                 return
     
+    def inRow(self,pos):
+        for enemy in enemies:
+            if enemy.pos[1] == pos[1]:
+                return(True)
+    
     def shoot(self):
         global balls
         global troops
         global energy
         for troop in troops:
-            if troop.source == "bron.png" and troopCalls[troops.index(troop)] % 60 == 0:
+            if troop.source == "bron.png" and troopCalls[troops.index(troop)] % 60 == 0 and self.inRow(troop.pos) == True:
                 shoot = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
                 shoot += Animation(size = (100, 100), d = 0.1)
                 shoot.start(troop)
@@ -197,7 +201,7 @@ class TopBar(Widget):
                 ball = self.spawnBullet(troop)
                 self.add_widget(ball)
                 balls.append(ball)
-            if troop.source == "KD.png" and troopCalls[troops.index(troop)] % 90 == 0:
+            if troop.source == "KD.png" and troopCalls[troops.index(troop)] % 90 == 0 and self.inRow(troop.pos) == True:
                 shoot = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
                 shoot += Animation(size = (100, 100), d = 0.1)
                 shoot.start(troop)
@@ -205,7 +209,7 @@ class TopBar(Widget):
                 ball = self.spawnBullet(troop)
                 self.add_widget(ball)
                 balls.append(ball)
-            if troop.source == "JR.png" and troopCalls[troops.index(troop)] % 900 == 0:
+            if troop.source == "JR.png" and troopCalls[troops.index(troop)] % 1800 == 0:
                 stretch = Animation(size = (100, 125), d = 0.5, t = 'out_elastic')
                 stretch += Animation(size = (100, 100), d = 0.5)
                 stretch.start(troop)
@@ -213,7 +217,7 @@ class TopBar(Widget):
                 energy += 50
     
     def roundStart(self):
-        round = Label(text = "Round" + str(i+1), pos = (600, 400),color= "ff3333",size = (100, 100))
+        round = Label(text = "Round" + str(i+1), pos = (600, 400),color= "FFFFFF",font_size = "200")
         self.add_widget(round)
         stretch = Animation(pos = (round.pos[0],round.pos[1]-50), d = 2)
         stretch += Animation(pos = (round.pos[0],round.pos[1]+50), d = 1)
