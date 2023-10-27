@@ -19,13 +19,13 @@ Config.write()
 
 class PVZApp(App): 
     def build(self):
-        game = TopBar()
-        Clock.schedule_interval(game.update, 1.0/56.5)
+        game = GameManager()
         return game
 
-rounds = [[8,2,0],[12,6,2]]
-roundsF = [10,20]
-roundsT = [10,20]
+rounds = [[8,2,0],[12,6,2],[17,10,8]]
+roundsF = [10,20,35]
+roundsT = [10,20,35]
+timeRounds = [[180,300],[120,240],[90,210]]
 selection = ""
 isSliding = False
 troops = []
@@ -43,44 +43,74 @@ mowersUsed = []
 callsSpawn = 0
 i = 0
 roundProgress = ProgressBar(max = 100, value = 0, size = (100, 100), pos = (0, 0))
-class TopBar(Widget):
+class GameManager(Widget):
     def __init__(self, **args):
-        super(TopBar, self).__init__(**args)
-        self.selectionBar()
-        self.bar()
+        super(GameManager, self).__init__(**args)
+        self.mainScreen()
+    
+    def mainScreen(self):
+        global layout
+        layout = Widget()
+        for i in layout.children:
+            layout.remove_widget(i)
+        layout.add_widget(Image(source = "background.png",size = (1200, 800), pos = (0,0)))
+        startGame = Button(background_normal = "clickButton.png" ,size = (600,200),pos = (0,550))
+        startGame.bind(on_press = lambda x: self.startGame())
+        instructions = Button(background_normal = "instructButton.png" ,size = (600,200),pos = (600,550))
+        instructions.bind(on_press = lambda x: self.instructions())
+        layout.add_widget(startGame)
+        layout.add_widget(instructions)
+        self.add_widget(layout)
+    
+    def instructions(self):
+        global layout
+        for i in layout.children:
+            layout.remove_widget(i)
+        layout.add_widget(Image(source = "instrutionsBack.png",size = (1200, 800), pos = (0,0)))
+        back = Button(background_normal = "back.png" ,size = (600,200),pos = (0,600))
+        back.bind(on_press = lambda x: self.mainScreen())
+        layout.add_widget(back)
+    
+    def startGame(self):
+        for i in self.children:
+            self.remove_widget(i)
+        self.add_widget(Image(source = "background.png",size = (1200, 800), pos = (0,0)))
+        self.SelectionBar()
+        self.roundBar()
         self.energyDisplay()
         self.court()
+        self.clock = Clock.schedule_interval(self.update, 1.0/56.5)
     
-    def selectionBar(self):
-        layout = GridLayout(cols = 5, rows = 1,size = (500, 100))
+    def SelectionBar(self):
+        layout = GridLayout(cols = 5, rows = 1,size = (500, 100),center = (600,50))
 
         btn = Button(text ="JR Smith\nCost: 50",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (0,0),
                     )
-        btn.bind(on_press = lambda x: self.troopSelection("JR"))
+        btn.bind(on_press = lambda x: self.troopSelection("jraw"))
         
         btn2 = Button(text ="Lebron James\nCost: 200",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (100,0),
                     ) 
-        btn2.bind(on_press = lambda x: self.troopSelection("bron"))
+        btn2.bind(on_press = lambda x: self.troopSelection("newbron"))
         
-        btn3 = Button(text ="Kevin Durant\nCost: 100",
+        btn3 = Button(text ="Kyrie Irving\nCost: 100",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (200,0),
                     )
-        btn3.bind(on_press = lambda x: self.troopSelection("KD"))
+        btn3.bind(on_press = lambda x: self.troopSelection("irving"))
         
-        btn4 = Button(text ="Kyrie Irving\nCost: 75",
+        btn4 = Button(text ="Kevin Love\nCost: 75",
                         color =(1, 0, .65, 1),
                         size = (100, 100),
                         pos = (300,0),
                     ) 
-        btn4.bind(on_press = lambda x: self.troopSelection("kyrie"))
+        btn4.bind(on_press = lambda x: self.troopSelection("klove"))
         
         btn5 = Button(text ="Delete Troop",
                         color =(1, 0, .65, 1),
@@ -121,19 +151,19 @@ class TopBar(Widget):
         global energy
         go = False
         health = 0
-        if troop == "bron" and energy >= 200:
+        if troop == "newbron" and energy >= 200:
             energy -= 200
             go = True
             health = 10
-        elif troop == "KD" and energy >= 100:
+        elif troop == "irving" and energy >= 100:
             energy -= 100
             go = True
             health = 10
-        elif troop == "JR" and energy >= 50:
+        elif troop == "jraw" and energy >= 50:
             energy -= 50
             go = True
             health = 5
-        elif troop == "kyrie" and energy >= 75:
+        elif troop == "klove" and energy >= 75:
             energy -= 75
             go = True
             health = 25
@@ -193,7 +223,7 @@ class TopBar(Widget):
         global troops
         global energy
         for troop in troops:
-            if troop.source == "bron.png" and troopCalls[troops.index(troop)] % 60 == 0 and self.inRow(troop.pos) == True:
+            if troop.source == "newbron.png" and troopCalls[troops.index(troop)] % 60 == 0 and self.inRow(troop.pos) == True:
                 shoot = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
                 shoot += Animation(size = (100, 100), d = 0.1)
                 shoot.start(troop)
@@ -201,7 +231,7 @@ class TopBar(Widget):
                 ball = self.spawnBullet(troop)
                 self.add_widget(ball)
                 balls.append(ball)
-            if troop.source == "KD.png" and troopCalls[troops.index(troop)] % 90 == 0 and self.inRow(troop.pos) == True:
+            if troop.source == "irving.png" and troopCalls[troops.index(troop)] % 90 == 0 and self.inRow(troop.pos) == True:
                 shoot = Animation(size = (125, 100), d = 0.25, t = 'out_elastic')
                 shoot += Animation(size = (100, 100), d = 0.1)
                 shoot.start(troop)
@@ -209,7 +239,7 @@ class TopBar(Widget):
                 ball = self.spawnBullet(troop)
                 self.add_widget(ball)
                 balls.append(ball)
-            if troop.source == "JR.png" and troopCalls[troops.index(troop)] % 1800 == 0:
+            if troop.source == "jraw.png" and troopCalls[troops.index(troop)] % 1800 == 0:
                 stretch = Animation(size = (100, 125), d = 0.5, t = 'out_elastic')
                 stretch += Animation(size = (100, 100), d = 0.5)
                 stretch.start(troop)
@@ -224,7 +254,7 @@ class TopBar(Widget):
         stretch.start(round)
         Clock.schedule_once(partial(self.removeWidget, round), 4)
     
-    def bar(self):
+    def roundBar(self):
         global i
         global roundProgress
         roundProgress = ProgressBar(max = 100, value = 0, size = (400, 100), pos = (500, 700))
@@ -358,9 +388,10 @@ class TopBar(Widget):
         global roundsT
         global i
         global callsSpawn
+        global timeRounds
         enemyList = ["curry","draymond","klay"]
         if callsSpawn % sec == 0 and callsSpawn != 0 and rounds[i] != 0 and roundsT[i] != 0:
-            sec = random.randint(180,300)
+            sec = random.randint(timeRounds[i][0],timeRounds[i][1])
             callsSpawn = 0
             choice = random.choice(enemyList)
             while rounds[i][enemyList.index(choice)] == 0:
